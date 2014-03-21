@@ -36,20 +36,20 @@ var canvas = document.createElement("canvas");
 var ctx = canvas.getContext("2d");
 canvas.width =  window.innerWidth; //640; //display_size.width //320;//512;
 canvas.height = window.innerHeight; //480; //display_size.height //568;//480;
+var game_board_proportion_x = 400;
+var game_board_proportion_y = 600;
 var proportion_x = 60; //320;
 var proportion_y = 90; //568;
 var padding_proportion_top = 8;
 var padding_proportion_bottom = 8;
 var paddle_proportion_x = 10;
 var paddle_proportion_y = 3;
+
+var paddle_speed_proportion = 300;
+var ball_speed_proportion_x = 150;
+var ball_speed_proportion_y = 150;
 //var paddle_width = 100;
 //var paddle_height = 25;
-var paddle_speed = 300;
-
-var ball_proportion_width = 3;
-var ball_proportion_height = 3;
-var ball_x_speed = 150;
-var ball_y_speed = 150;
 
 var block_proportion_width = 4;
 var block_proportion_height = 3;
@@ -211,20 +211,64 @@ var isMobile = {
 };
 
 
+
 // Game states
 
+//Determine actual size of game board, based on canvas size & game board proportion
+
+var x_dominance = ( (canvas.width * game_board_proportion_y) / game_board_proportion_x );
+var y_dominance = ( (canvas.height * game_board_proportion_x ) / game_board_proportion_y );
+
+var game_board_scaled_width = 400;
+var game_board_scaled_height = 600;
+
+if ( x_dominance <= canvas.height ) {
+    game_board_scaled_width = canvas.width;
+    game_board_scaled_height = x_dominance; 
+} else if ( y_dominance <= canvas.width ) {
+    game_board_scaled_height = canvas.height;
+    game_board_scaled_width = y_dominance;
+} 
+
 game_board = {
-    width: 400,
-    height: 600,
-    pos: [( canvas.width / 2 ) - ( 400 / 2 ), 0],
-    padding_top: Math.round( ( 600 * padding_proportion_top ) / proportion_y ),
-    padding_bottom: Math.round( ( 600 * padding_proportion_bottom ) / proportion_y ),
-    padding_left: ( canvas.width / 2 ) - ( 400 / 2 ),
+    width: game_board_scaled_width,
+    height: game_board_scaled_height,
+    pos: [( canvas.width / 2 ) - ( game_board_scaled_width / 2 ), 0],
+    padding_top: Math.round( ( game_board_scaled_height * padding_proportion_top ) / proportion_y ),
+    padding_bottom: Math.round( ( game_board_scaled_height * padding_proportion_bottom ) / proportion_y ),
+    padding_left: ( canvas.width / 2 ) - ( game_board_scaled_width / 2 ),
     dropshadow: {
         color: 'rgba(0,0,0,0.35)',
-        offset: ( ( 400 * dropshadow_proportion ) / proportion_x )
+        offset: ( ( game_board_scaled_width * dropshadow_proportion ) / proportion_x )
     }
 }
+
+var paddle_speed = 300;
+
+var ball_proportion_width = 3;
+var ball_proportion_height = 3;
+var ball_x_speed = (( game_board.width * ball_speed_proportion_x ) / game_board_proportion_x);
+var ball_y_speed = (( game_board.height * ball_speed_proportion_y ) / game_board_proportion_y );
+
+
+var block = {
+    proportion_width: 4,
+    proportion_height: 3,
+    width: Math.round( ( game_board.width * block_proportion_width / proportion_x) ),
+    height: Math.round( ( ( game_board.height * block_proportion_height ) / proportion_y ) ),
+    types: {
+        standard: {
+            color: 'rgb(190,190,190)'
+        }
+    }
+}
+
+var blocks = [];
+var total_blocks = 38;
+var blocks_total_columns = 11;
+var blocks_total_rows = 12;
+var blocks_initial_starting_y = 0 - ( game_board.padding_top + ( blocks_total_rows * block.height ) ); 
+var block_starting_x = Math.round( (( game_board.width - (blocks_total_columns * block.width) ) / 2) + game_board.pos[0] );
 
 var game = {
     is_reset: false,
@@ -294,6 +338,28 @@ var hud_top = {
     }
 }
 
+var hud_mid = {
+    height: game_board.height - ( (-blocks_initial_starting_y) + game_board.padding_bottom ) ,
+    width: game_board.width,
+    pos: [game_board.pos[0], (-blocks_initial_starting_y) + game_board.padding_top ],
+    title: {
+        text_props: {
+            line_height: 10,
+            font: ( (game_board.height - ( (-blocks_initial_starting_y) + game_board.padding_bottom ) ) / 10)+'px press_start_2pregular',
+            textBaseline: 'middle',
+            textAlign: 'left',
+            fillStyle: '#FFFFFF'
+        },
+        strings: {
+            bassel: "Bassel",
+            breakout: "BreaKout!"
+        }
+    }
+
+}
+
+//console.log(hud_mid.pos);
+
 var hud = {
     height: game_board.padding_bottom,
     width: game_board.width,
@@ -332,7 +398,7 @@ var paddle = {
     color: 'rgb( 254, 238, 106)',
     speed: paddle_speed,
     is_moving: false,
-    horizontal_dir: 'left'
+    is_moving_right: false
     //sprite: new Sprite(paddle_url, [0, 0], [paddle_width, paddle_height], 10, [0])
 }
 
@@ -352,27 +418,6 @@ var ball = {
     sprite: new Sprite(ball_url, [0, 0], [ball_source_width, ball_source_height], 10, [0], 'horizontal', [ ( ( ( game_board.width * ball_proportion_width ) / proportion_x ) / ball_source_width ) , ( ( ( game_board.height * ball_proportion_height ) / proportion_y ) / ball_source_height )])
 }
 
-var block = {
-    proportion_width: 4,
-    proportion_height: 3,
-    width: Math.round( ( game_board.width * block_proportion_width / proportion_x) ),
-    height: Math.round( ( ( game_board.height * block_proportion_height ) / proportion_y ) ),
-    types: {
-        standard: {
-            color: 'rgb(190,190,190)'
-        }
-    }
-}
-
-
-//var block_width = 75;
-//var block_height = 25;
-var blocks = [];
-var total_blocks = 38;
-var blocks_total_columns = 11;
-var blocks_total_rows = 12;
-var blocks_initial_starting_y = 0 - ( game_board.padding_top + ( blocks_total_rows * block.height ) ); 
-var block_starting_x = Math.round( (( game_board.width - (blocks_total_columns * block.width) ) / 2) + game_board.pos[0] );
 
 var bassel = {
     starting_pos: [ 
@@ -409,7 +454,8 @@ var current_mouse_pressed_coords = {};
 var currently_touching = false;
 var currently_pressed = false;
 function handle_input(dt) {
-    if ( ( input.isDown('*') || input.isDown('LEFT') || (input.isDown('RIGHT')) || input.isDown('MOUSEDOWN') ) && !currently_pressed ) {
+    //console.log('checking..');
+    if ( ( input.isDown('*') || input.isDown('LEFT') || (input.isDown('RIGHT')) || input.isDown('MOUSEDOWN') || input.isDown('TOUCHING') ) && !currently_pressed ) {
         currently_pressed = true;
         if ( !game.is_running && game.is_reset && !game.blocks_in_play && !game.blocks_animating ) {
             //Start the round
@@ -423,38 +469,88 @@ function handle_input(dt) {
     }
 
     if( input.isDown('RIGHT') && game.blocks_in_play && !game.is_over ) {
-        if ( !game.is_running && game.is_reset ) { ball.is_moving_right = true; launch_ball(); };
+        if ( !game.is_running && game.is_reset ) { game.is_reset = false; ball.is_moving_right = true; launch_ball(); };
         //console.log('RIGHT');
         console.log(game.blocks_in_play);
         paddle.is_moving = true;
-        paddle.horizontal_dir = 'right';
+        paddle.is_moving_right = true;
     } else if ( input.isDown('LEFT') && game.blocks_in_play && !game.is_over ) {
-        if ( !game.is_running && game.is_reset ) { ball.is_moving_right = false; launch_ball(); };
+        if ( !game.is_running && game.is_reset ) { game.is_reset = false; ball.is_moving_right = false; launch_ball(); };
         //console.log('LEFT');
         paddle.is_moving = true;
-        paddle.horizontal_dir = 'left';
+        paddle.is_moving_right = false;
     } else {
         paddle.is_moving = false;
     }
 
-    if ( input.isDown('MOUSEDOWN') && !mouse_currently_pressed && game.blocks_in_play ) { 
-        mouse_currently_pressed = true;
+    // Handle MOUSE controls
+    if ( !isMobile.any() && input.isDown('MOUSEDOWN') && !mouse_currently_pressed && game.blocks_in_play ) { 
+        //mouse_currently_pressed = true;
+        var tapping = { left: false, right: true }
         current_mouse_pressed_coords = input.return_coords();
-        if ( !game.is_running && game.is_reset ) { launch_ball(); };
-    } else if ( !input.isDown('MOUSEDOWN') ) {
+        //console.log(current_mouse_pressed_coords.x);
+        if ( current_mouse_pressed_coords.x <= (canvas.width / 2) ) { tapping.left = true; tapping.right = false; } else { tapping.left = false; tapping.right = true; }
+        //console.log( current_mouse_pressed_coords.x+' '+canvas.width/2 );
+        if ( !game.is_running && game.is_reset && !tapping.left ) { ball.is_moving_right = true; game.is_reset = false; launch_ball(); }
+        else if ( !game.is_running && game.is_reset && tapping.left) { ball.is_moving_right = false; game.is_reset = false; launch_ball(); };
+
+        if( game.is_running && !game.is_reset ) {
+            //console.log('yes!');
+            if ( current_mouse_pressed_coords.x <= ( canvas.width/2 ) ) {
+                paddle.is_moving_right = false;
+            } else {
+                paddle.is_moving_right = true;
+            }
+            paddle.is_moving = true;
+        }
+    } else if ( !input.isDown('MOUSEDOWN') && !isMobile.any() ) {
         mouse_currently_pressed = false;
         current_mouse_pressed_coords = {}
     }
+
+    // Handle TOUCH controls
+    if ( input.isDown('TOUCHING') && isMobile.any() && game.blocks_in_play ) {
+        var tapping = { left: false, right: true }
+
+        current_mouse_pressed_coords = input.return_coords();
+        if ( current_mouse_pressed_coords.x <= (canvas.width / 2) ) { console.log('touching left site. '); tapping.left = true; tapping.right = false; } else { tapping.left = false; tapping.right = true; }
+
+        if ( !game.is_running && game.is_reset && !tapping.left && !currently_touching ) { ball.is_moving_right = true; game.is_reset = false; launch_ball(); }
+        else if ( !game.is_running && game.is_reset && tapping.left && !currently_touching ) { ball.is_moving_right = false; game.is_reset = false; launch_ball(); };
+        
+        if( game.is_running && !game.is_reset ) {
+            //console.log('yes!');
+            if ( current_mouse_pressed_coords.x <= ( canvas.width/2 ) ) {
+                paddle.is_moving_right = false;
+            } else {
+                paddle.is_moving_right = true;
+            }
+            paddle.is_moving = true;
+        }
+        //console.log('test '+current_mouse_pressed_coords.x+' '+current_mouse_pressed_coords.y+' '+paddle.is_moving);
+
+        currently_touching = true;
+    } else if ( !input.isDown('TOUCHING') && isMobile.any() ) {
+        currently_touching = false;
+    }
+
+    /**
+    if ( currently_touching && isMobile.any() ) {
+        paddle.is_moving = true;
+    } else if ( !currently_touching && isMobile.any() ) {
+        paddle.is_moving = false;
+    }
+    **/
 
 }
 
 
 function update_entities( dt ) {
     // Paddle Movement
-    if ( paddle.is_moving && paddle.horizontal_dir == 'left' ) {
+    if ( paddle.is_moving && paddle.is_moving_right == false ) {
         paddle.pos[0] -= (paddle_speed * dt);
         paddle.x2 = paddle.pos[0] + paddle.width;
-    } else if ( paddle.is_moving && paddle.horizontal_dir == 'right' ) {
+    } else if ( paddle.is_moving && paddle.is_moving_right == true ) {
         paddle.pos[0] += (paddle_speed * dt);
         paddle.x2 = paddle.pos[0] + paddle.width;
     }
@@ -498,7 +594,7 @@ function update_entities( dt ) {
 
     // Handle block movement
     if ( game.blocks_animating && blocks[0].pos[1] <= game_board.padding_top ) {
-        console.log('animating..');
+        //console.log('animating..');
         game.display_title = false;
         for( b=0; b < blocks.length; b++) {
             blocks[b].pos[1] += 10;
@@ -527,6 +623,9 @@ function box_collides(pos, size, pos2, size2) {
 }
 
 function check_collisions() {
+    ball.is_colliding = false;
+
+    //Check ball for collision with game_board
     if ( ball.y2 >= game_board.height ) {
         //ball.is_moving_down = false;
     } else if ( ball.x2 >= ( game_board.width + game_board.pos[0] )  ) {
@@ -543,6 +642,8 @@ function check_collisions() {
         reset();
     }
     
+
+    //Check ball for collision with paddle
     if ( box_collides( ball.pos, [ball.width, ball.height], paddle.pos, [paddle.width, paddle.height] ) ) {
         //if ( !ball.is_colliding && ball.pos[1] >= ( paddle.pos[1] ) ) {
         if ( !ball.is_colliding &&
@@ -561,35 +662,33 @@ function check_collisions() {
         }
         
     } else {
-        ball.is_colliding = false;
+        //ball.is_colliding = false;
     }
 
+    //Check ball for collision with blocks
     for ( b = 0; b < blocks.length; b++ ) {
         if ( box_collides( ball.pos, [ball.width, ball.height], blocks[b].pos, [blocks[b].width, blocks[b].height ] ) && !blocks[b].is_cleared ) {
             //console.log('hitting a block!');
             if ( !ball.is_colliding &&
                  (
-                 (ball.x2 >= blocks[b].pos[0] && ball.pos[0] <= blocks[b].pos[0] ) ||
-                 (ball.pos[0] <= blocks[b].x2 && ball.x2 >= blocks[b].x2)
+                 (ball.x2 >= blocks[b].pos[0] && ball.pos[0] < blocks[b].pos[0] ) ||
+                 (ball.pos[0] <= blocks[b].x2 && ball.x2 > blocks[b].x2)
                  ) 
                ) {
-                ball.is_colliding = true;
                 ball.is_moving_right = !ball.is_moving_right;
-                blocks[b].is_cleared = true;
-                game.score++;
-                blocks.splice(b, 1);
+                
             } else if ( 
                 !ball.is_colliding 
               ) {
-                ball.is_colliding = true;
                 ball.is_moving_down = !ball.is_moving_down;
-                blocks[b].is_cleared = true;
-                game.score++;
-                blocks.splice(b, 1);
                 //console.log('top or bottom collision');
             }
+            blocks[b].is_cleared = true;
+            blocks.splice(b, 1);
+            game.score++;
+            ball.is_colliding = true;
         } else {
-            ball.is_colliding = false;
+            //ball.is_colliding = false;
         }
     } 
 
@@ -654,17 +753,41 @@ function render() {
 
         if ( game.display_title ) {
             //Show Logo
+            
+            /**
             ctx.font = '20px press_start_2pregular';
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
             ctx.fillStyle = '#FFFFFF';
             ctx.fillText('Bassel BreaKout!',( game_board.pos[0] + (game_board.width/2) ), (game_board.height / 2) );
+            **/
+
+            ctx.font = hud_mid.title.text_props.font;
+            ctx.textBaseline = hud_mid.title.text_props.textBaseline;
+            ctx.textAlign = hud_mid.title.text_props.textAlign;
+            ctx.fillStyle = hud_mid.title.text_props.fillStyle;
+            ctx.textAlign = 'right';
+            ctx.fillText( hud_mid.title.strings.bassel, (hud_mid.pos[0] + (game_board.width / 2.4)), (hud_mid.pos[1]) + ( hud_mid.height / 5 )  );
+            ctx.textAlign = 'left';
+            ctx.fillText( hud_mid.title.strings.breakout, (hud_mid.pos[0]) + (game_board.width / 2.4), ((( hud_mid.pos[1] + ( (game_board.height - ( (-blocks_initial_starting_y) + game_board.padding_bottom ) ) / hud_mid.title.text_props.line_height) ) + hud_mid.title.text_props.line_height) ) + ( hud_mid.height / 5 ) );
+            /**
+            ctx.font = hud_mid.title.text_props.font;
+            ctx.textBaseline = hud_mid.title.text_props.textBaseline;
+            ctx.fillStyle = hud_mid.title.text_props.fillStyle;
+            ctx.fillText(hud_mid.title.strings.bassel_breakout, hud_mid.pos[0], hud_mid.pos[2]);
+            **/
 
             //Press any key to play!
             if (!isMobile.any()) {
                 ctx.font = ( game_board.padding_top/3 ) + 'px press_start_2pregular';
+                ctx.textAlign = hud_top.round.text_props.textAlign;
                 ctx.textBaseline = 'top';
                 ctx.fillText('Press any key to play', ( game_board.pos[0] + (game_board.width/2)) , (game_board.padding_top / 2) );
+            } else {
+                ctx.font = ( game_board.padding_top/3 ) + 'px press_start_2pregular';
+                ctx.textAlign = hud_top.round.text_props.textAlign;
+                ctx.textBaseline = 'top';
+                ctx.fillText('Tap to play', ( game_board.pos[0] + (game_board.width/2)) , (game_board.padding_top / 2) ); 
             }
         }
 
