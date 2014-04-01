@@ -1,3 +1,11 @@
+/**********************************************
+                TO-DOs
+-----------------------------------------------
+
+    * Center the background tile
+
+**********************************************/
+
 // A cross-browser requestAnimationFrame
 // See https://hacks.mozilla.org/2011/08/animating-with-javascript-from-setinterval-to-requestanimationframe/
 var requestAnimFrame = (function(){
@@ -45,7 +53,7 @@ var padding_proportion_bottom = 8;
 var paddle_proportion_x = 10;
 var paddle_proportion_y = 3;
 
-var paddle_speed_proportion = 150;
+var paddle_speed_proportion = 200;
 var ball_speed_proportion = 150;
 //var paddle_width = 100;
 //var paddle_height = 25;
@@ -55,6 +63,8 @@ var block_proportion_height = 3;
 
 var bassel_proportion_width = 22;
 var bassel_proportion_height = 31;
+
+var prison_background_proportion = 38;
 
 var dropshadow_proportion = 1;
 // Set styles of hud elements, based on canvas size
@@ -98,7 +108,7 @@ var add_block = function(blocks_array, block_type, block_pos) {
 var arrange_blocks = function() {
     var current_column = 1;
     var current_row = 1;
-    var block_pos = [block_starting_x,0];
+    var block_pos = [block_starting_x, game_board.pos[1]];
 
     var create_bar = function(starting_pos) {
         var current_pos = starting_pos;
@@ -176,6 +186,7 @@ if ( use_svg == false ) {
 
 
 // Get the resources for the game
+var background_tile_url = 'images/background-tile.'+file_extension;
 var bassel_url = 'images/bassel.'+file_extension;
 var paddle_url = 'images/paddle.'+file_extension;
 var ball_url = 'images/ball.'+file_extension;
@@ -184,6 +195,7 @@ var block_url = {
 }
 
 resources.load([
+    background_tile_url,
     bassel_url,
     paddle_url,
     ball_url,
@@ -232,7 +244,7 @@ if ( x_dominance <= canvas.height ) {
 game_board = {
     width: game_board_scaled_width,
     height: game_board_scaled_height,
-    pos: [( canvas.width / 2 ) - ( game_board_scaled_width / 2 ), 0],
+    pos: [( canvas.width / 2 ) - ( game_board_scaled_width / 2 ), Math.round( (canvas.height / 2) - ( game_board_scaled_height / 2 ) )],
     padding_top: Math.round( ( game_board_scaled_height * padding_proportion_top ) / proportion_y ),
     padding_bottom: Math.round( ( game_board_scaled_height * padding_proportion_bottom ) / proportion_y ),
     padding_left: ( canvas.width / 2 ) - ( game_board_scaled_width / 2 ),
@@ -244,8 +256,8 @@ game_board = {
 
 var paddle_speed = ( game_board.width * paddle_speed_proportion ) / game_board_proportion_x;
 
-var ball_proportion_width = 3;
-var ball_proportion_height = 3;
+var ball_proportion_width = 2;
+var ball_proportion_height = 2;
 
 
 var block = {
@@ -264,8 +276,10 @@ var blocks = [];
 var total_blocks = 38;
 var blocks_total_columns = 11;
 var blocks_total_rows = 12;
-var blocks_initial_starting_y = 0 - ( game_board.padding_top + ( blocks_total_rows * block.height ) ); 
+var blocks_initial_starting_y = game_board.pos[1] - ( game_board.padding_top + ( blocks_total_rows * block.height ) ); 
 var block_starting_x = Math.round( (( game_board.width - (blocks_total_columns * block.width) ) / 2) + game_board.pos[0] );
+var one_pixel_x = (game_board.width) / proportion_x;
+var one_pixel_y = (game_board.height) / proportion_y;
 
 var game = {
     is_reset: false,
@@ -281,10 +295,11 @@ var game = {
     starting_round: 1,
     round: 1,
     background: {
-        pos: [game_board.pos[0], 0],
+        pos: [game_board.pos[0], game_board.pos[1]],
         width: game_board.width,
         height: game_board.height,
-        color: 'rgb(55,55,55)'
+        //color: 'rgb(55,55,55)'
+        color: 'rgb(0,73,94)'
     }
 }
 
@@ -336,13 +351,21 @@ var hud_top = {
 }
 
 var hud_mid = {
-    height: game_board.height - ( (-blocks_initial_starting_y) + game_board.padding_bottom ) ,
+    height: (game_board.pos[1] + game_board.height) -  ( (-blocks_initial_starting_y) + game_board.padding_bottom ) ,
     width: game_board.width,
-    pos: [game_board.pos[0], (-blocks_initial_starting_y) + game_board.padding_top ],
+    pos: [game_board.pos[0], (game_board.pos[1] + ((-blocks_initial_starting_y) + game_board.padding_top)) ],
+    center: [ ((canvas.width) / 2), ((game_board.pos[1] + ((-blocks_initial_starting_y) + game_board.padding_top)) + (((game_board.pos[1] + game_board.height) -  ( (-blocks_initial_starting_y) + game_board.padding_bottom ))/2) ) ],
+    text_props: {
+        line_height: 10,
+        font: ( (game_board.height - (game_board.pos[1] + ( (-blocks_initial_starting_y) + game_board.padding_bottom ) )) / 10)+'px press_start_2pregular',
+        textBaseline: 'middle',
+        textAlign: 'center',
+        fillStyle: '#FFFFFF'  
+    },
     title: {
         text_props: {
             line_height: 10,
-            font: ( (game_board.height - ( (-blocks_initial_starting_y) + game_board.padding_bottom ) ) / 10)+'px press_start_2pregular',
+            font: ( (game_board.height - (game_board.pos[1] + ( (-blocks_initial_starting_y) + game_board.padding_bottom ) )) / 10)+'px press_start_2pregular',
             textBaseline: 'middle',
             textAlign: 'left',
             fillStyle: '#FFFFFF'
@@ -350,6 +373,18 @@ var hud_mid = {
         strings: {
             bassel: "Bassel",
             breakout: "BreaKout!"
+        }
+    },
+    success: {
+        text_props: {},
+        strings: {
+            success: "Success!"
+        }
+    },
+    fail: {
+        text_props: {},
+        strings: {
+            fail: "Game Over"
         }
     }
 
@@ -360,7 +395,7 @@ var hud_mid = {
 var hud = {
     height: game_board.padding_bottom,
     width: game_board.width,
-    pos: [game_board.pos[0], ( game_board.height - game_board.height/10 ), game_board.width + game_board.padding_left, game_board.height ],
+    pos: [game_board.pos[0], game_board.pos[1] + ( game_board.height - game_board.height/10 ), game_board.width + game_board.padding_left, game_board.height ],
     score: { 
         text_props: {
             font: (game_board.padding_bottom / 3)+'px',
@@ -386,10 +421,13 @@ var hud = {
 }
 
 var paddle = {
-    starting_pos: [(game_board.width / 2) - ( ( ( game_board.width * paddle_proportion_x ) / proportion_x ) /2 ) + (game_board.pos[0]), ( ( game_board.height - ( ( game_board.height * paddle_proportion_y ) / proportion_y )) - hud.height )],
-    pos: [( ( game_board.width / 2 ) - ( ( ( game_board.width * paddle_proportion_x ) / proportion_x ) / 2 ) ) + (game_board.pos[0]), ( ( game_board.height - ( ( game_board.height * paddle_proportion_y ) / proportion_y )) - hud.height )],
+    starting_pos: [(game_board.width / 2) - ( ( ( game_board.width * paddle_proportion_x ) / proportion_x ) /2 ) + (game_board.pos[0]), 
+                    game_board.pos[1] + ( ( game_board.height - ( ( game_board.height * paddle_proportion_y ) / proportion_y )) - hud.height )],
+    pos: [( ( game_board.width / 2 ) - ( ( ( game_board.width * paddle_proportion_x ) / proportion_x ) / 2 ) ) + (game_board.pos[0]), 
+              game_board.pos[1] + ( ( game_board.height - ( ( game_board.height * paddle_proportion_y ) / proportion_y )) - hud.height )],
     x2: ( (game_board.width / 2) + ( ( ( game_board.width * paddle_proportion_x ) / proportion_x ) / 2 ) ),
-    y2: ( game_board.height - ( game_board.height/10 ) ),
+    y2: ( (game_board.pos[1] + game_board.height) - ( game_board.height/10 ) ),
+    center: {x: 0,y: 0}, 
     height: Math.round( ( game_board.height * paddle_proportion_y ) / proportion_y ) ,
     width: Math.round( ( game_board.width * paddle_proportion_x ) / proportion_x ) ,
     color: 'rgb( 254, 238, 106)',
@@ -404,31 +442,71 @@ var ball = {
     pos: [ (game_board.width / 2) - ( ( ( game_board.width * ball_proportion_width ) / proportion_x ) /2 ) + (game_board.pos[0]), (paddle.pos[1]-( ( game_board.height * ball_proportion_height ) / proportion_y ))],
     x2: (game_board.width / 2) - ( ( ( game_board.width * ball_proportion_width ) / proportion_x ) /2 ) + (game_board.pos[0]) + Math.round( ( game_board.width * ball_proportion_width ) / proportion_x ),
     y2: (paddle.pos[1]-( ( game_board.height * ball_proportion_height ) / proportion_y )) + Math.round( ( game_board.height * ball_proportion_height ) / proportion_y ),
+    center: {x: 0,y: 0},
     height: Math.round( ( game_board.height * ball_proportion_height ) / proportion_y ),
     width: Math.round( ( game_board.width * ball_proportion_width ) / proportion_x ),
     radius: (Math.round( ( game_board.height * ball_proportion_height ) / proportion_y ) / 2),
     speed_x : ((( game_board.width * ball_speed_proportion ) / game_board_proportion_x) * 1),
     speed_y : ((( game_board.height * ball_speed_proportion ) / game_board_proportion_y ) * 1),
+    spin : 1,
     is_moving: true,
     is_moving_down: false,
     is_moving_right: true,
     is_colliding: false,
     animating_speed: 100,
-    center: [ 0,0 ],
     sprite: new Sprite(ball_url, [0, 0], [ball_source_width, ball_source_height], 10, [0], 'horizontal', [ ( ( ( game_board.width * ball_proportion_width ) / proportion_x ) / ball_source_width ) , ( ( ( game_board.height * ball_proportion_height ) / proportion_y ) / ball_source_height )])
 }
-
 
 var bassel = {
     starting_pos: [ 
         ( game_board.width / 2 ) - ( (( game_board.width * bassel_proportion_width ) / proportion_x) / 2 ) + game_board.pos[0] , 
-        ( (game_board.padding_top)+ ( (((blocks_total_rows + 2) * block.height)/2) - ( (( game_board.height * bassel_proportion_height ) / proportion_y) / 2 ) ) ) ],
+        game_board.pos[1] + ( (game_board.padding_top)+ ( (((blocks_total_rows + 2) * block.height)/2) - ( (( game_board.height * bassel_proportion_height ) / proportion_y) / 2 ) ) ) ],
     pos: [
         ( game_board.width / 2 ) - ( (( game_board.width * bassel_proportion_width ) / proportion_x) / 2 ) + game_board.pos[0] ,
-        ( (game_board.padding_top)+ ( (((blocks_total_rows + 2) * block.height)/2) - ( (( game_board.height * bassel_proportion_height ) / proportion_y) / 2 ) ) ) ],
+        game_board.pos[1] + ( (game_board.padding_top)+ ( (((blocks_total_rows + 2) * block.height)/2) - ( (( game_board.height * bassel_proportion_height ) / proportion_y) / 2 ) ) ) ],
     width: ( game_board.width * bassel_proportion_width ) / proportion_x,
     height: ( game_board.height * bassel_proportion_height ) / proportion_y,
     sprite: new Sprite(bassel_url, [0, 0], [bassel_source_width, bassel_source_height], 10, [0], 'horizontal', [ ( (( game_board.width * bassel_proportion_width ) / proportion_x) / bassel_source_width ) , ( (( game_board.height * bassel_proportion_height ) / proportion_y) / bassel_source_height ) ])
+}
+
+var prison_background = {
+    pos: [ ((game_board.width/2) + game_board.pos[0]) - ( ((game_board.width * prison_background_proportion) / proportion_x) / 2 ),
+            bassel.pos[1] - ( (((game_board.height * prison_background_proportion) / proportion_y) - bassel.height) / 3 )
+         ],
+    color: 'rgb(55,55,55)',
+    border_left: {
+        pos: [(((game_board.width/2) + game_board.pos[0]) - ( ((game_board.width * prison_background_proportion) / proportion_x) / 2 ) - one_pixel_x ),
+            bassel.pos[1] - ( (((game_board.height * prison_background_proportion) / proportion_y) - bassel.height) / 3 )
+        ],
+        width: one_pixel_x,
+        height: (game_board.height * prison_background_proportion) / proportion_y,
+        color: 'rgb(42,42,42)'
+    },
+    border_right: {
+        pos: [((((game_board.width/2) + game_board.pos[0]) - ( ((game_board.width * prison_background_proportion) / proportion_x) / 2 ) + ((game_board.width * prison_background_proportion) / proportion_x) ) ),
+            bassel.pos[1] - ( (((game_board.height * prison_background_proportion) / proportion_y) - bassel.height) / 3 )
+        ],
+        width: one_pixel_x,
+        height: (game_board.height * prison_background_proportion) / proportion_y,
+        color: 'rgb(42,42,42)'
+    },
+    border_top: {
+        pos: [ ((game_board.width/2) + game_board.pos[0]) - ( ((game_board.width * prison_background_proportion) / proportion_x) / 2 ),
+            bassel.pos[1] - ( (((game_board.height * prison_background_proportion) / proportion_y) - bassel.height) / 3 ) - one_pixel_y
+        ],
+        width: (game_board.width * prison_background_proportion) / proportion_x,
+        height: one_pixel_y
+    },
+    border_bottom: {
+        pos: [ (((game_board.width/2) + game_board.pos[0]) - ( ((game_board.width * prison_background_proportion) / proportion_x) / 2 )) - one_pixel_x,
+               (bassel.pos[1] - ( (((game_board.height * prison_background_proportion) / proportion_y) - bassel.height) / 3 ) - one_pixel_y) + (((game_board.height * prison_background_proportion) / proportion_y) + one_pixel_y )
+        ],
+        width: ((game_board.width * prison_background_proportion) / proportion_x) + (one_pixel_x * 2),
+        height: one_pixel_y,
+        color: 'rgb(79,79,79)'
+    },
+    width: (game_board.width * prison_background_proportion) / proportion_x,
+    height: (game_board.height * prison_background_proportion) / proportion_y
 }
 
 
@@ -561,16 +639,19 @@ function update_entities( dt ) {
         paddle.pos[0] = ( game_board.pos[0] + game_board.width ) - paddle.width;
     }
 
+    paddle.center.x = paddle.pos[0] + (paddle.width / 2);
+    paddle.center.y = paddle.pos[1] + (paddle.height/ 2);
+
 
     // Ball Movement
     if ( ball.is_moving && game.is_running ) {
         switch(ball.is_moving_right) {
             case false:
-                ball.pos[0] -= ( ball.speed_x * dt );
+                ball.pos[0] -= (( ball.speed_x * dt ) * ball.spin);
                 ball.x2 = ball.pos[0] + ball.width;
                 break;
             case true:
-                ball.pos[0] += ( ball.speed_x * dt );
+                ball.pos[0] += (( ball.speed_x * dt ) * ball.spin);
                 ball.x2 = ball.pos[0] + ball.width;
             }
         switch(ball.is_moving_down) {
@@ -581,23 +662,25 @@ function update_entities( dt ) {
             case true:
                 ball.pos[1] += ( ball.speed_y * dt );
                 ball.y2 = ball.pos[1] + ball.height;
+
                 break;
         }
 
-        ball.center[0] = (ball.pos[0] + ball.x2)/2;
-        ball.center[1] = (ball.pos[1] + ball.y2)/2;
+        ball.center.x = (ball.pos[0] + (ball.width/2));
+        ball.center.y = (ball.pos[1] + (ball.height/2));
 
-        if ( ball.pos[1] >= game_board.height ) {
+        if ( ball.pos[1] >= ( game_board.pos[1] + game_board.height ) ) {
             game.is_over = true;
         } 
     }
 
     // Handle block movement
-    if ( game.blocks_animating && blocks[0].pos[1] <= game_board.padding_top ) {
+    if ( game.blocks_animating && blocks[0].pos[1] <= game_board.pos[1] + game_board.padding_top ) {
         //console.log('animating..');
         game.display_title = false;
         for( b=0; b < blocks.length; b++) {
             blocks[b].pos[1] += 10;
+            blocks[b].y2 = blocks[b].pos[1] + blocks[b].height;
         }
     }  else if ( game.blocks_animating ) {
         game.blocks_animating = false;
@@ -650,7 +733,7 @@ var collisions = {
         }
       if (!pt) {
         if (!nx) {
-            console.log('check right side..');
+            //console.log('check right side..');
             pt = collisions.intercept(ball.pos[0], ball.pos[1], ball.pos[0] + ball.width, ball.pos[1] + ball.height, 
                                    rect.right  + ball.radius, 
                                    rect.top    - ball.radius, 
@@ -659,7 +742,7 @@ var collisions = {
                                    "right");
         }
         else if (nx) {
-            console.log('check left side..');
+            //console.log('check left side..');
             pt = collisions.intercept(ball.pos[0], ball.pos[1], ball.pos[0] + ball.width, ball.pos[1] + ball.height, 
                                    rect.left   - ball.radius, 
                                    rect.top    - ball.radius, 
@@ -674,8 +757,8 @@ var collisions = {
 }
 
 
-// Collisions
-
+// Collisions (old)
+/**
 function collides(x, y, r, b, x2, y2, r2, b2) {
     return !(r <= x2 || x > r2 ||
              b <= y2 || y > b2);
@@ -687,19 +770,20 @@ function box_collides(pos, size, pos2, size2) {
                     pos2[0], pos2[1],
                     pos2[0] + size2[0], pos2[1] + size2[1]);
 }
+**/
 
 function check_collisions() {
     //ball.is_colliding = false;
     //console.log(ball.is_colliding);
 
     //Check ball for collision with game_board
-    if ( ball.y2 >= game_board.height ) {
+    if ( ball.y2 >= ( game_board.pos[1] + game_board.height ) ) {
         //ball.is_moving_down = false;
     } else if ( ball.x2 >= ( game_board.width + game_board.pos[0] )  ) {
         ball.is_moving_right = false;
     } else if ( ball.pos[0] <= game_board.pos[0] ) {
         ball.is_moving_right = true;
-    } else if ( ball.pos[1] <= 0 ) {
+    } else if ( ball.pos[1] <= game_board.pos[1] ) {
         ball.is_moving_down = true;
     }
 
@@ -740,12 +824,24 @@ function check_collisions() {
     **/
         var pt = collisions.ballIntercept( ball, { left: paddle.pos[0], right: paddle.x2, top: paddle.pos[1], bottom: paddle.y2}, ball.is_moving_right, ball.is_moving_down );
         //console.log( ball.speed_x+' '+ball.speed_y );
-        
-        if ( pt  ) {
+        if ( pt ) {
             switch(pt.d)
             {
                 case 'top':
                     ball.is_moving_down = !ball.is_moving_down;
+
+                    var distance_from_center = paddle.center.x - ball.center.x
+                    if ( distance_from_center < 0 ) { 
+                        distance_from_center = -distance_from_center 
+                        ball.is_moving_right = true;
+                    } else { ball.is_moving_right = false; }
+
+                    // Calculate angle of spin
+                    var s = distance_from_center / ( paddle.width / 2 );
+                    if ( s > 1 ) { s=1; }
+
+                    console.log(s);
+                    ball.spin = s;
                     break;
                 case 'left':
                 case 'right':
@@ -761,30 +857,74 @@ function check_collisions() {
 
 
     //Check ball for collision with blocks
-    for ( b = 0; b < blocks.length; b++ ) {
-        if ( box_collides( ball.pos, [ball.width, ball.height], blocks[b].pos, [blocks[b].width, blocks[b].height ] ) && !blocks[b].is_cleared ) {
-            //console.log('hitting a block!');
-            if ( !ball.is_colliding &&
-                 (
-                 (ball.x2 >= blocks[b].pos[0] && ball.pos[0] < blocks[b].pos[0] ) ||
-                 (ball.pos[0] <= blocks[b].x2 && ball.x2 > blocks[b].x2)
-                 ) 
+    if (game.is_running && ball.is_moving) {
+        for ( b = 0; b < blocks.length; b++ ) {
+            var collisions_this_frame = 0;
+            if ( 
+                ( ball.pos[1] >= ( blocks[b].pos[1] - blocks[b].height) && ball.pos[1] <= (blocks[b].y2 + blocks[b].height) ) &&
+                ( ball.pos[0] >= ( blocks[b].pos[0] - blocks[b].width ) && ball.pos[0] <= (blocks[b].x2 + blocks[b].width ) )
+
                ) {
+                var pt = collisions.ballIntercept( ball, { left: blocks[b].pos[0], right: blocks[b].x2, top: blocks[b].pos[1], bottom: blocks[b].y2}, ball.is_moving_right, ball.is_moving_down );
+                //console.log("{ left: "+blocks[b].pos[0]+", right: "+blocks[b].x2+", top: "+blocks[b].pos[1]+", bottom: "+blocks[b].y2+"}");
+                if ( pt  ) {
+                    ball.is_colliding = true;
+                    collisions_this_frame++;
+                switch(pt.d)
+                {
+                    case 'top':
+                    case 'bottom':
+                        //ball.is_moving_down = !ball.is_moving_down;
+                        if(collisions_this_frame <= 1) {
+                            ball.is_moving_down = !ball.is_moving_down;
+                        }
+                        
+                        //console.log('hitting '+pt.d+' side of block!');
+                        break;
+                    case 'left':
+                    case 'right':
+                        if ( collisions_this_frame <= 1 ) {
+                            ball.is_moving_right = !ball.is_moving_right;
+                        }
+                        
+                        //console.log('hitting '+pt.d+' side of block!');
+                        //ball.is_moving_right = !ball.is_moving_right;
+                        break;
+
+                }
+                blocks[b].is_cleared = true;
+                blocks.splice(b, 1);
+                game.score++;
+                //ball.is_colliding = true;
+                }
+
+            }
+            
+            /**
+            if ( box_collides( ball.pos, [ball.width, ball.height], blocks[b].pos, [blocks[b].width, blocks[b].height ] ) && !blocks[b].is_cleared ) {
+                if ( !ball.is_colliding &&
+                     (
+                    (ball.x2 >= blocks[b].pos[0] && ball.pos[0] < blocks[b].pos[0] ) ||
+                    (ball.pos[0] <= blocks[b].x2 && ball.x2 > blocks[b].x2)
+                    ) 
+                ) {
                 ball.is_moving_right = !ball.is_moving_right;
                 
-            } else if ( 
+                } else if ( 
                 !ball.is_colliding 
-              ) {
+                ) {
                 ball.is_moving_down = !ball.is_moving_down;
-                //console.log('top or bottom collision');
+                }
+                blocks[b].is_cleared = true;
+                blocks.splice(b, 1);
+                game.score++;
+                ball.is_colliding = true;
+            } else {
             }
-            blocks[b].is_cleared = true;
-            blocks.splice(b, 1);
-            game.score++;
-            ball.is_colliding = true;
-        } else {
-            //ball.is_colliding = false;
+            **/
+
         }
+
     } 
 
 
@@ -794,13 +934,36 @@ function check_collisions() {
 
 // Draw everything
 function render() {
+        //Draw background + tile, etc..
         ctx.fillStyle = "#CCCCCC";
         ctx.fillRect(0,0,canvas.width, canvas.height);
 
         draw_rect( game.background, ctx );
 
-        
+        //Tile
+        var tile = new Image();
+        tile.src = background_tile_url;
+        var tile_proportion_x = (game_board.width * 16) / proportion_x;
+
+        var tempCanvas = document.createElement("canvas"),
+        tCtx = tempCanvas.getContext("2d");
+        tempCanvas.width = tile_proportion_x;
+        tempCanvas.height = tile_proportion_x;
+
+        tCtx.drawImage(tile,0,0,tile.width,tile.height,0,0,tile_proportion_x,tile_proportion_x);
+
+        var ptrn = ctx.createPattern(tempCanvas, 'repeat');
+        ctx.fillStyle = ptrn;
+        ctx.fillRect(game_board.pos[0], game_board.pos[1], game_board.width, game_board.height);
             
+        //Draw Bassel prison background square
+        draw_rect(prison_background, ctx);
+        draw_rect(prison_background.border_left, ctx);
+        draw_rect(prison_background.border_right, ctx);
+        draw_rect(prison_background.border_top, ctx);
+        draw_rect(prison_background.border_bottom, ctx);
+
+
         render_entity( bassel );
 
         //Draw Shadows
@@ -878,12 +1041,12 @@ function render() {
                 ctx.font = ( game_board.padding_top/3 ) + 'px press_start_2pregular';
                 ctx.textAlign = hud_top.round.text_props.textAlign;
                 ctx.textBaseline = 'top';
-                ctx.fillText('Press any key to play', ( game_board.pos[0] + (game_board.width/2)) , (game_board.padding_top / 2) );
+                ctx.fillText('Press any key to play', ( game_board.pos[0] + (game_board.width/2)) , game_board.pos[1] + (game_board.padding_top / 2) );
             } else {
                 ctx.font = ( game_board.padding_top/3 ) + 'px press_start_2pregular';
                 ctx.textAlign = hud_top.round.text_props.textAlign;
                 ctx.textBaseline = 'top';
-                ctx.fillText('Tap to play', ( game_board.pos[0] + (game_board.width/2)) , (game_board.padding_top / 2) ); 
+                ctx.fillText('Tap to play', ( game_board.pos[0] + (game_board.width/2)) , game_board.pos[1] + (game_board.padding_top / 2) ); 
             }
         }
 
@@ -893,29 +1056,52 @@ function render() {
             ctx.textBaseline = hud_top.round.text_props.textBaseline;
             ctx.textAlign = hud_top.round.text_props.textAlign;
             ctx.fillStyle = hud_top.round.text_props.fillStyle;
-            ctx.fillText(hud_top.round.strings.round+game.round, (game_board.pos[0] + (game_board.width/2)) , (hud_top.height / 2) );
+            ctx.fillText(hud_top.round.strings.round+game.round, (game_board.pos[0] + (game_board.width/2)) , game_board.pos[1] + (hud_top.height / 2) );
         } else if ( !game.is_running && !game.blocks_animating && !game.is_over && game.round_cleared ) {
             ctx.font = hud_top.next_round.text_props.font;
             ctx.textBaseline = hud_top.next_round.text_props.textBaseline;
             ctx.textAlign = hud_top.next_round.text_props.textAlign;
             ctx.fillStyle = hud_top.next_round.text_props.fillStyle;
-            ctx.fillText(hud_top.next_round.strings.try_again, (game_board.pos[0] + (game_board.width/2) ), (hud_top.height / 2) );
+            ctx.fillText(hud_top.next_round.strings.try_again, (game_board.pos[0] + (game_board.width/2) ), game_board.pos[1] + (hud_top.height / 2) );
+
+            //Display success message
+            ctx.font = hud_mid.text_props.font;
+            ctx.textAlign = hud_mid.text_props.textAlign;
+            ctx.fillStyle = hud_mid.text_props.fillStyle;
+            ctx.fillText( hud_mid.success.strings.success, hud_mid.center[0], hud_mid.center[1] );
+
         } else if ( game.is_over ) {
             //Display try again message in top_hud
             ctx.font = hud_top.try_again.text_props.font;
             ctx.textBaseline = hud_top.try_again.text_props.textBaseline;
             ctx.textAlign = hud_top.try_again.text_props.textAlign;
             ctx.fillStyle = hud_top.try_again.text_props.fillStyle;
-            ctx.fillText(hud_top.try_again.strings.try_again, (game_board.pos[0] + (game_board.width/2) ), (hud_top.height / 2) );
+            ctx.fillText(hud_top.try_again.strings.try_again, (game_board.pos[0] + (game_board.width/2) ), game_board.pos[1] + (hud_top.height / 2) );
+
+            //Display 'Game Over' in mid hud
+            ctx.font = hud_mid.text_props.font;
+            ctx.textAlign = hud_mid.text_props.textAlign;
+            ctx.textBaseline = hud_mid.text_props.textBaseline;
+            ctx.fillStyle = hud_mid.text_props.fillStyle;
+            ctx.fillText( hud_mid.fail.strings.fail, hud_mid.center[0], hud_mid.center[1] );            
         }
 
-        // Red rectangle
+        // Border
         
         ctx.beginPath();
         ctx.lineWidth=ball.width + game_board.dropshadow.offset;
         ctx.strokeStyle="#666666";
-        ctx.strokeRect(game_board.pos[0] - (ctx.lineWidth/2), game_board.pos[1] - (ctx.lineWidth/2), game_board.width + (ctx.lineWidth),game_board.height + (ctx.lineWidth));
+        //ctx.strokeRect(game_board.pos[0] - (ctx.lineWidth/2), game_board.pos[1] - (ctx.lineWidth/2), game_board.width + (ctx.lineWidth),game_board.height + (ctx.lineWidth));
         
+        if ( game_board.pos[1] > 0 ) {
+            ctx.fillStyle="#666666";
+            ctx.fillRect(game_board.pos[0], 0, canvas.width, game_board.pos[1]);
+            ctx.fillRect( game_board.pos[0], (game_board.pos[1] + game_board.height), canvas.width, canvas.height );
+        } else if ( game_board.pos[0] > 0 ) {
+            ctx.fillStyle="#666666";
+            ctx.fillRect(0, 0, game_board.pos[0], canvas.height);
+            ctx.fillRect( (game_board.pos[0] + game_board.width), 0, canvas.width, canvas.height );
+        }
 };
 
 function draw_shadow( element, context ) {
